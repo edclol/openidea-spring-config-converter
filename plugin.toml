@@ -1,0 +1,107 @@
+id = "edc.spring-config-converter"
+name = "Spring Config Converter"
+version = "0.1.0"
+description = "Spring Boot 配置格式转换：YAML / Properties / ENV 互转，遵循 Relaxed Binding 规则。"
+authors = ["edc"]
+license = "Apache-2.0"
+change-notes = "0.1.0 — 首个版本：三种格式互转，支持选区与整文件。"
+categories = ["tools"]
+engines.openidea = "^1.4"
+wasm = "dist/plugin.wasm"
+activation = ["on-command:*"]
+
+[capabilities]
+required = ["editor.read", "editor.write", "project.read", "project.write"]
+
+[[contributes.commands]]
+id = "to-yaml"
+title = "Spring 配置转换: 转换为 YAML"
+category = "Spring 配置转换"
+when = "editorFocus"
+
+[[contributes.commands]]
+id = "to-properties"
+title = "Spring 配置转换: 转换为 Properties"
+category = "Spring 配置转换"
+when = "editorFocus"
+
+[[contributes.commands]]
+id = "to-env"
+title = "Spring 配置转换: 转换为 ENV"
+category = "Spring 配置转换"
+when = "editorFocus"
+
+[[contributes.commands]]
+id = "file-to-yaml"
+title = "Spring 配置转换: 当前文件转 YAML"
+category = "Spring 配置转换"
+when = "editorFocus"
+
+[[contributes.commands]]
+id = "file-to-properties"
+title = "Spring 配置转换: 当前文件转 Properties"
+category = "Spring 配置转换"
+when = "editorFocus"
+
+[[contributes.commands]]
+id = "file-to-env"
+title = "Spring 配置转换: 当前文件转 ENV"
+category = "Spring 配置转换"
+when = "editorFocus"
+
+[[contributes.menus]]
+menu = "editor.context"
+command = "to-yaml"
+submenu = "Spring 配置转换"
+
+[[contributes.menus]]
+menu = "editor.context"
+command = "to-properties"
+submenu = "Spring 配置转换"
+
+[[contributes.menus]]
+menu = "editor.context"
+command = "to-env"
+submenu = "Spring 配置转换"
+
+[[contributes.menus]]
+menu = "projectView.context"
+command = "file-to-yaml"
+submenu = "Spring 配置转换"
+
+[[contributes.menus]]
+menu = "projectView.context"
+command = "file-to-properties"
+submenu = "Spring 配置转换"
+
+[[contributes.menus]]
+menu = "projectView.context"
+command = "file-to-env"
+submenu = "Spring 配置转换"
+
+[[contributes.menus]]
+menu = "editorTab.context"
+command = "file-to-yaml"
+submenu = "Spring 配置转换"
+
+[[contributes.menus]]
+menu = "editorTab.context"
+command = "file-to-properties"
+submenu = "Spring 配置转换"
+
+[[contributes.menus]]
+menu = "editorTab.context"
+command = "file-to-env"
+submenu = "Spring 配置转换"
+
+[[contributes.keymaps]]
+command = "to-yaml"
+key = "Alt+Shift+Y"
+
+[[contributes.keymaps]]
+command = "to-properties"
+key = "Alt+Shift+P"
+
+[[contributes.keymaps]]
+command = "to-env"
+key = "Alt+Shift+E"
