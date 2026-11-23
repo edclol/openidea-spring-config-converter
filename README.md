@@ -10,25 +10,27 @@ Spring Boot 配置三格式互转：YAML / Properties / ENV，遵循 Relaxed Bin
 - 按扩展名自动识别源格式，相同格式不重复转换
 - 快捷键：`Alt+Shift+Y` / `Alt+Shift+P` / `Alt+Shift+E`
 
-## 构建
+## 构建与产物
+
+GitHub Actions 在 Linux 环境自动构建标准产物（`.oiplugin`）：
+
+- 每次 push / PR 构建并上传 Artifacts
+- 推送 `v*` 标签时附带发布 GitHub Release
+
+本地构建：
 
 ```bash
 cargo build --release --target wasm32-wasip2
 mkdir -p dist
 cp target/wasm32-wasip2/release/openidea_plugin_spring_config_converter.wasm dist/plugin.wasm
+openidea-plugin build   # 官方 CLI（需 Linux / WSL），构建并校验
 ```
 
-或使用官方 CLI（需 Linux / WSL）：
-
-```bash
-openidea-plugin build
-```
-
-产物为 `dist/plugin.wasm`。`openidea-plugin check` 已通过（插件 API 1.14）。
+编译产物不纳入版本控制（见 `.gitignore`）。
 
 ## 安装
 
-在 Settings → Plugins 中选择本目录，或执行 `openidea-plugin link` 后重载 IDE。
+下载 GitHub Releases 中的 `.oiplugin`，在 Settings → Plugins 中选择「Install Plugin from Disk」。开发时可在源码目录执行 `openidea-plugin link` 后重载 IDE。
 
 ## 转换规则
 
