@@ -41,12 +41,21 @@ jobs:
           echo "/tmp" >> "$GITHUB_PATH"
 
       - name: Check and pack
+        env:
+          SIGNING_KEY: ${{ secrets.OPENIDEA_SIGNING_KEY }}
         run: |
           set -e
           openidea-plugin check .
           VERSION=$(grep -m1 '^version' plugin.toml | sed -E 's/.*"([^"]+)".*/\1/')
           mkdir -p artifacts
-          openidea-plugin pack . --out "${{ github.workspace }}/artifacts/edc.spring-config-converter-${VERSION}.oiplugin"
+          if [ -n "$SIGNING_KEY" ]; then
+            printf '%s' "$SIGNING_KEY" > /tmp/edc.key
+            chmod 600 /tmp/edc.key
+            openidea-plugin pack . --key /tmp/edc.key --publisher edc --out "${{ github.workspace }}/artifacts/edc.spring-config-converter-${VERSION}.oiplugin"
+            rm -f /tmp/edc.key
+          else
+            openidea-plugin pack . --out "${{ github.workspace }}/artifacts/edc.spring-config-converter-${VERSION}.oiplugin"
+          fi
           openidea-plugin check "artifacts/edc.spring-config-converter-${VERSION}.oiplugin"
 
       - name: Upload artifact
