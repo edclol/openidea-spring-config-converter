@@ -14,3 +14,8 @@ sha256 = "d283487a62f5e0acf07f6a8110e2fca6646f8d82736fedb8a6770d51a217dce8"
 version = "0.1.5"
 package = "https://github.com/edclol/openidea-spring-config-converter/releases/download/v0.1.5/edc.spring-config-converter-0.1.5.oiplugin"
 sha256 = "26576c6857174826c9dbc425cbbb7aaf26101dae102ce8a7909806a48a533445"
+
+[[versions]]
+version = "0.1.6"
+package = "https://github.com/edclol/openidea-spring-config-converter/releases/download/v0.1.6/edc.spring-config-converter-0.1.6.oiplugin"
+sha256 = "fdb3811958dcce41a3064026a6ba6b4e00ea928e30f82fa03d689eecfe0c083b"
