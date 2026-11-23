@@ -1,10 +1,10 @@
 id = "edc.spring-config-converter"
 name = "Spring Config Converter"
-version = "0.1.0"
+version = "0.1.2"
 description = "Spring Boot 配置格式转换：YAML / Properties / ENV 互转，遵循 Relaxed Binding 规则。"
 authors = ["edc"]
 license = "Apache-2.0"
-change-notes = "0.1.0 — 首个版本：三种格式互转，支持选区与整文件。"
+change-notes = "0.1.2 — 修复右键菜单灰色不可用，支持签名发布。"
 categories = ["tools"]
 engines.openidea = "^1.4"
 wasm = "dist/plugin.wasm"
