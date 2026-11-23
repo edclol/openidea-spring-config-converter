@@ -1,10 +1,10 @@
 id = "edc.spring-config-converter"
 name = "Spring Config Converter"
-version = "0.1.5"
+version = "0.1.6"
 description = "Spring Boot 配置格式转换：YAML / Properties / ENV 互转，遵循 Relaxed Binding 规则。"
 authors = ["edc"]
 license = "Apache-2.0"
-change-notes = "0.1.5 — 修复审阅问题：不覆盖已有文件、Properties 转义、ENV 连字符映射。"
+change-notes = "0.1.6 — 修复 Properties Unicode 转义解码，添加插件图标。"
 categories = ["tools"]
 icon = "icons/spring-config.svg"
 icon-dark = "icons/spring-config-dark.svg"

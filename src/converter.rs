@@ -147,12 +147,12 @@ fn parse_flat(text: &str, separator: char, lowercase: bool, properties: bool) ->
         has_entry = true;
         let key = line[..index].trim();
         let key = if lowercase { key.to_lowercase() } else { key.to_string() };
-        let key = if properties { unescape_property(&key) } else { key };
+        let key = if properties { unescape_property(&key)? } else { key };
         let mut value = line[index + 1..].trim().to_string();
         if value.len() >= 2 && value.starts_with('"') && value.ends_with('"') {
             value = value[1..value.len() - 1].to_string();
         }
-        let value = if properties { unescape_property(&value) } else { value };
+        let value = if properties { unescape_property(&value)? } else { value };
         insert(&mut root, &split_key(&key, separator), value);
     }
     if !has_entry {
@@ -178,26 +178,70 @@ fn find_unescaped_eq(line: &str) -> Option<usize> {
     None
 }
 
-/// Java Properties 反转义：\n \r \t \f \\ \= \: \ 及其他字符按 Java 规则解析。
-fn unescape_property(text: &str) -> String {
+/// Java Properties 反转义：\n \r \t \f \\ 及其他字符按 Java 规则解析；
+/// \uXXXX 解码为 Unicode 码点（含 UTF-16 代理对），畸形转义返回错误。
+fn unescape_property(text: &str) -> Result<String, String> {
     let mut out = String::with_capacity(text.len());
-    let mut chars = text.chars();
-    while let Some(c) = chars.next() {
+    let mut rest: std::iter::Peekable<std::str::Chars<'_>> = text.chars().peekable();
+    while let Some(c) = rest.next() {
         if c != '\\' {
             out.push(c);
             continue;
         }
-        match chars.next() {
-            Some('n') => out.push('\n'),
-            Some('r') => out.push('\r'),
-            Some('t') => out.push('\t'),
-            Some('f') => out.push('\u{000C}'),
-            Some('\\') => out.push('\\'),
-            Some(other) => out.push(other),
-            None => out.push('\\'),
+        let Some(next) = rest.next() else {
+            return Err("Properties 末尾存在孤立反斜杠".to_string());
+        };
+        match next {
+            'n' => out.push('\n'),
+            'r' => out.push('\r'),
+            't' => out.push('\t'),
+            'f' => out.push('\u{000C}'),
+            '\\' => out.push('\\'),
+            'u' => {
+                let first = read_hex4(&mut rest, "u")?;
+                let code = if (0xD800..=0xDBFF).contains(&first) {
+                    // 高位代理：必须紧跟 \uDC00-\uDFFF 低位代理。
+                    let after_high = rest.next();
+                    let marker = rest.next();
+                    if after_high != Some('\\') || marker != Some('u') {
+                        return Err(format!("高位代理 {first:04X} 后应为 \\u，实际为 {after_high:?}{marker:?}"));
+                    }
+                    let second = read_hex4(&mut rest, "u")?;
+                    if !(0xDC00..=0xDFFF).contains(&second) {
+                        return Err(format!("无效的 Unicode 低位代理 {second:04X}"));
+                    }
+                    0x10000 + ((first - 0xD800) << 10) + (second - 0xDC00)
+                } else if (0xDC00..=0xDFFF).contains(&first) {
+                    return Err(format!("孤立的 Unicode 低位代理 {first:04X}"));
+                } else {
+                    first
+                };
+                let ch = char::from_u32(code)
+                    .ok_or_else(|| format!("无效的 Unicode 码点 {code:04X}"))?;
+                out.push(ch);
+            }
+            other => {
+                // Java: 未知转义忽略反斜杠，但 = : 空格需保留（由调用方转义）。
+                out.push(other);
+            }
         }
     }
-    out
+    Ok(out)
+}
+
+/// 读取 \u 后的四位十六进制数字。
+fn read_hex4<I: Iterator<Item = char>>(chars: &mut std::iter::Peekable<I>, kind: &str) -> Result<u32, String> {
+    let mut value = 0u32;
+    for _ in 0..4 {
+        let digit = chars
+            .next()
+            .ok_or_else(|| format!("\\{kind} 转义的十六进制位数不足"))?;
+        let n = digit
+            .to_digit(16)
+            .ok_or_else(|| format!("\\{kind} 转义含非法十六进制字符 {digit:?}"))?;
+        value = value * 16 + n;
+    }
+    Ok(value)
 }
 
 fn split_key(key: &str, separator: char) -> Vec<String> {
