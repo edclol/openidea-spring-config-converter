@@ -1,0 +1,6 @@
+repository = "https://github.com/edclol/openidea-spring-config-converter"
+
+[[versions]]
+version = "0.1.3"
+package = "https://github.com/edclol/openidea-spring-config-converter/releases/download/v0.1.3/edc.spring-config-converter-0.1.3.oiplugin"
+sha256 = "dc3b63d0f8dfc9bc6ff4204b90ef927dc753cf72e5279064bb106aec4e9b765b"
