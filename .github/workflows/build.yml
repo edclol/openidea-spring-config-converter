@@ -32,10 +32,14 @@ jobs:
           cp target/wasm32-wasip2/release/openidea_plugin_spring_config_converter.wasm dist/plugin.wasm
 
       - name: Install OpenIDEA plugin CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          CLI_VERSION=$(curl -sL https://api.github.com/repos/l0ng-ai/openidea/releases/latest | grep -m1 '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/')
-          curl -fsSL "https://github.com/l0ng-ai/openidea/releases/download/v${CLI_VERSION}/openidea-plugin-linux-x86_64.gz" -o /tmp/openidea-plugin.gz
+          CLI_VERSION=v0.1.50
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+            "https://github.com/l0ng-ai/openidea/releases/download/${CLI_VERSION}/openidea-plugin-linux-x86_64.gz" \
+            -o /tmp/openidea-plugin.gz
           gzip -df /tmp/openidea-plugin.gz
           chmod +x /tmp/openidea-plugin
           echo "/tmp" >> "$GITHUB_PATH"
