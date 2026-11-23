@@ -83,8 +83,8 @@ pub fn convert(text: &str, from: ConfigFormat, to: ConfigFormat) -> Result<Strin
 fn parse(text: &str, format: ConfigFormat) -> Result<Value, String> {
     match format {
         ConfigFormat::Yaml => parse_yaml(text),
-        ConfigFormat::Properties => parse_flat(text, '.', false),
-        ConfigFormat::Env => parse_flat(text, '_', true),
+        ConfigFormat::Properties => parse_flat(text, '.', false, true),
+        ConfigFormat::Env => parse_flat(text, '_', true, false),
     }
 }
 
@@ -129,7 +129,7 @@ fn from_yaml_value(value: YamlValue) -> Value {
     }
 }
 
-fn parse_flat(text: &str, separator: char, lowercase: bool) -> Result<Value, String> {
+fn parse_flat(text: &str, separator: char, lowercase: bool, properties: bool) -> Result<Value, String> {
     let mut root = Vec::new();
     let mut has_entry = false;
     for raw in text.lines() {
@@ -137,7 +137,8 @@ fn parse_flat(text: &str, separator: char, lowercase: bool) -> Result<Value, Str
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
-        let Some(index) = line.find('=') else {
+        let split = if properties { find_unescaped_eq(line) } else { line.find('=') };
+        let Some(index) = split else {
             return Err(format!("无效的键值行: {line}"));
         };
         if index == 0 {
@@ -146,16 +147,57 @@ fn parse_flat(text: &str, separator: char, lowercase: bool) -> Result<Value, Str
         has_entry = true;
         let key = line[..index].trim();
         let key = if lowercase { key.to_lowercase() } else { key.to_string() };
+        let key = if properties { unescape_property(&key) } else { key };
         let mut value = line[index + 1..].trim().to_string();
         if value.len() >= 2 && value.starts_with('"') && value.ends_with('"') {
             value = value[1..value.len() - 1].to_string();
         }
+        let value = if properties { unescape_property(&value) } else { value };
         insert(&mut root, &split_key(&key, separator), value);
     }
     if !has_entry {
         return Err("未找到有效的 KEY=VALUE 行".to_string());
     }
     Ok(Value::Map(root))
+}
+
+/// 找到第一个未被反斜杠转义的 '='（Properties 键可含转义的 \=）。
+fn find_unescaped_eq(line: &str) -> Option<usize> {
+    let mut escaped = false;
+    for (i, c) in line.char_indices() {
+        if escaped {
+            escaped = false;
+            continue;
+        }
+        if c == '\\' {
+            escaped = true;
+        } else if c == '=' {
+            return Some(i);
+        }
+    }
+    None
+}
+
+/// Java Properties 反转义：\n \r \t \f \\ \= \: \ 及其他字符按 Java 规则解析。
+fn unescape_property(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut chars = text.chars();
+    while let Some(c) = chars.next() {
+        if c != '\\' {
+            out.push(c);
+            continue;
+        }
+        match chars.next() {
+            Some('n') => out.push('\n'),
+            Some('r') => out.push('\r'),
+            Some('t') => out.push('\t'),
+            Some('f') => out.push('\u{000C}'),
+            Some('\\') => out.push('\\'),
+            Some(other) => out.push(other),
+            None => out.push('\\'),
+        }
+    }
+    out
 }
 
 fn split_key(key: &str, separator: char) -> Vec<String> {
@@ -246,9 +288,54 @@ fn render(root: &Value, format: ConfigFormat) -> Result<String, String> {
             if entries.is_empty() {
                 return Err("未找到可转换的键值配置".to_string());
             }
-            Ok(entries.into_iter().map(|(key, value)| format!("{key}={value}")).collect::<Vec<_>>().join("\n"))
+            Ok(entries
+                .into_iter()
+                .map(|(key, value)| match format {
+                    ConfigFormat::Properties => format!("{}={}", escape_property_key(&key), escape_property_value(&value)),
+                    _ => format!("{key}={value}"),
+                })
+                .collect::<Vec<_>>()
+                .join("\n"))
         }
     }
+}
+
+/// Java Properties 键：等号、冒号、空格与控制字符需转义。
+fn escape_property_key(key: &str) -> String {
+    let mut out = String::with_capacity(key.len());
+    for c in key.chars() {
+        match c {
+            '\\' => out.push_str("\\\\"),
+            '=' => out.push_str("\\="),
+            ':' => out.push_str("\\:"),
+            ' ' => out.push_str("\\ "),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            '\u{000C}' => out.push_str("\\f"),
+            _ => out.push(c),
+        }
+    }
+    out
+}
+
+/// Java Properties 值：反斜杠与控制字符转义；行首空格需前置反斜杠以免被忽略。
+fn escape_property_value(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    let mut at_start = true;
+    for c in value.chars() {
+        match c {
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            '\u{000C}' => out.push_str("\\f"),
+            ' ' if at_start => out.push_str("\\ "),
+            _ => out.push(c),
+        }
+        at_start = false;
+    }
+    out
 }
 
 fn walk(path: &[String], value: &Value, out: &mut Vec<(String, String)>, env_style: bool) {
@@ -281,7 +368,7 @@ fn join_key(path: &[String], env_style: bool) -> String {
     path.iter()
         .map(|segment| {
             if env_style {
-                segment.replace('.', "_").to_uppercase()
+                segment.replace('.', "_").replace('-', "").to_uppercase()
             } else {
                 segment.clone()
             }

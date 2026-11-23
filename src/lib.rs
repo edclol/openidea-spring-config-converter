@@ -94,6 +94,9 @@ fn convert_file(ctx: &Invocation, target: ConfigFormat) -> Result<(), Error> {
     }
     let converted = convert(&text, source, target).map_err(Error::Failed)?;
     let target_path = with_extension(&path, target.extension());
+    if project.exists(&target_path)? {
+        return Err(format!("目标文件 {} 已存在，未覆盖", file_name(&target_path)).into());
+    }
     project.write_file(&target_path, &converted)?;
     host::notify(
         NotificationLevel::Info,
