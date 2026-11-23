@@ -30,7 +30,20 @@ openidea-plugin build   # 官方 CLI（需 Linux / WSL），构建并校验
 
 ## 安装
 
-下载 GitHub Releases 中的 `.oiplugin`，在 Settings → Plugins 中选择「Install Plugin from Disk」。开发时可在源码目录执行 `openidea-plugin link` 后重载 IDE。
+- **Marketplace**：Settings → Plugins → Available，发布后可在其中搜索 `Spring Config Converter`
+- **本地**：下载 Releases 中的 `.oiplugin`，Install Plugin from Disk
+- **开发**：在源码目录执行 `openidea-plugin link` 后重载 IDE
+
+## 发布到 Marketplace
+
+社区插件通过 registry [`l0ng-ai/openidea-plugins`](https://github.com/l0ng-ai/openidea-plugins) 收录。条目文件已备在 `registry/` 目录，提交步骤：
+
+1. 在 registry 仓库新建分支，将 `registry/publishers/edc.toml` 放到 `publishers/edc.toml`
+2. 将 `registry/plugins/edc.spring-config-converter.toml` 放到 `plugins/edc.spring-config-converter.toml`
+3. 提交 PR，等待 maintainer 审核（新发布者与插件会检查源码、权限与签名）
+4. 合并后一小时内同步到 OpenIDEA 默认 marketplace
+
+新版本发布流程：本项目打 `vX.Y.Z` 标签 → CI 构建签名包到 Release → 在 registry 的 `plugins/edc.spring-config-converter.toml` 追加 `[[versions]]`（含版本、包 URL、SHA-256）→ 提交 PR。公钥见 `SIGNING_PUBLIC_KEY.md`。
 
 ## 转换规则
 
